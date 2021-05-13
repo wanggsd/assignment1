@@ -2,18 +2,19 @@ import time
 from collections import defaultdict
 import numpy as np
 import pandas as pd
-from target_mean import target_mean_np2
+from target_mean import target_mean_np2, target_mean_v3
 
 
 def timeit(n_rep):
   def _timeit(f):
     def time_and_run(*args, **kwargs):
       times = list()
+      print(f"Testing {f.__name__} {n_rep} time(s)...")
       for _ in range(n_rep):
         t0 = time.time()
         res = f(*args, **kwargs)
         times.append(time.time() - t0)
-      print(f"Time consumption: {np.mean(times) * 1000:.5f}ms")
+      print(f"Mean time consumption: {np.mean(times) * 1000:.5f}ms\n")
       return res
     return time_and_run
   return _timeit
@@ -44,14 +45,27 @@ def target_mean_np1(data, y_name, x_name):
 
 
 if __name__ == "__main__":
-  y = np.random.randint(2, size=(5000, 1))
-  x = np.random.randint(10, size=(5000, 1))
+  nr = 10000
+  print("# of rows in test data:", nr)
+  y = np.random.randint(2, size=(nr, 1))
+  x = np.random.randint(10, size=(nr, 1))
   data = pd.DataFrame(np.concatenate([y, x], axis=1), columns=['y', 'x'])
-  print("Testing v1...")
+
+  print("\n====================")
+  print("Demos shown in class")
+  print("====================")
   res1 = target_mean_v1(data, 'y', 'x')
-  print("\nTesting np1...")
+  res0 = timeit(100)(target_mean_v3)(data, 'y', 'x')
+  assert np.allclose(np.linalg.norm(res1 - res0), 0)
+
+  print("\n========================")
+  print("Pure Python Optimization")
+  print("========================")
   res2 = target_mean_np1(data, 'y', 'x')
   assert np.allclose(np.linalg.norm(res1 - res2), 0)
-  print("\nTesting np2...")
+
+  print("\n========================")
+  print("Optimization with Cython")
+  print("========================")
   res3 = timeit(100)(target_mean_np2)(data, 'y', 'x')
   assert np.allclose(np.linalg.norm(res1 - res3), 0)
